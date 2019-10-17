@@ -1,0 +1,10 @@
+#!/bin/sh
+
+
+mkdir -p ~/.ddllaptop
+cd ~/.ddllaptop/
+curl --remote-name https://raw.githubusercontent.com/ddl-retornam/laptop/master/mac
+curl --remote-name https://raw.githubusercontent.com/ddl-retornam/laptop/master/Brewfile
+curl --remote-name https://raw.githubusercontent.com/ddl-retornam/laptop/master/.laptop.local
+curl --remote-name https://raw.githubusercontent.com/ddl-retornam/laptop/master/Brewfile.local
+/usr/bin/env bash mac 2>&1 | tee ~/.ddllaptop/laptop.log

@@ -1,0 +1,6 @@
+# Put all your custom casks here 
+
+
+brew "mas"          # mac app store terminal client
+cask "iterm2"       # better terminal app
+

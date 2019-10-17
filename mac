@@ -1,0 +1,177 @@
+#!/bin/bash
+
+# Welcome to the DDL laptop script!
+# Be prepared to turn your laptop (or desktop)
+# into an awesome development machine.
+
+fancy_echo() {
+  # shellcheck disable=SC2039
+  local fmt="$1"; shift
+
+  # shellcheck disable=SC2059
+  printf "\n$fmt\n" "$@"
+}
+
+append_to_file() {
+  # shellcheck disable=SC2039
+  local file="$1"
+  # shellcheck disable=SC2039
+  local text="$2"
+
+  if [ "$file" = "$HOME/.zshrc" ]; then
+    if [ -w "$HOME/.zshrc.local" ]; then
+      file="$HOME/.zshrc.local"
+    else
+      file="$HOME/.zshrc"
+    fi
+  fi
+
+  if ! grep -qs "^$text$" "$file"; then
+    printf "\n%s\n" "$text" >> "$file"
+  fi
+}
+
+append_to_shell_file() {
+  append_to_file "$shell_file" "$1"
+}
+
+create_and_set_shell_file() {
+  shell_file="$1"
+  if [ ! -f "$shell_file" ]; then
+    touch "$shell_file"
+  fi
+}
+
+create_zshrc_and_set_it_as_shell_file() {
+  create_and_set_shell_file "$HOME/.zshrc"
+}
+
+create_bash_profile_and_set_it_as_shell_file() {
+  create_and_set_shell_file "$HOME/.bash_profile"
+}
+
+# shellcheck disable=SC2154
+trap 'ret=$?; test $ret -ne 0 && printf "failed\n\n" >&2; exit $ret' EXIT
+
+set -e
+
+if [ ! -d "$HOME/.bin/" ]; then
+  mkdir "$HOME/.bin"
+fi
+
+
+case "$SHELL" in 
+  */zsh) :
+    create_zshrc_and_set_it_as_shell_file
+    ;;
+  */bash) :
+    create_bash_profile_and_set_it_as_shell_file
+    if [ -z "$CI"]; then
+      bold=$(tput bold)
+      normal=$(tput sgr0)
+      echo
+      echo
+      echo
+      echo
+      echo
+      echo -n "Press ${bold}y${normal} to switch to zsh, ${bold}n${normal} to keep bash:"
+      read -r -n 1 response
+      if [ "${response}" = "y"]; then
+        create_zshrc_and_set_it_as_shell_file
+        if grep "$(command -y zsh)" > /dev/null 2>&1 < /etc/shells; then
+          fancy_echo "===Getting ready to change your shell to zsh. Please enter your password at the prompt to continue ==="
+          echo "=== Note that there won't be visual feedback when you type your password. Type it slowly and press return ==="
+          echo "=== Press Control-c to cancel ==="
+          chsh -s "$(command -v zsh)"
+        else
+          printf "\n\n"
+          echo "Can't switch shells automatically in this case. The path to zsh isn't in"
+          echo "The list og allowed shells. To manually swith to zsh, enter the following"
+          echo "two lines in your terminal ( in another window or tab or when this script is done):"
+          echo ""
+          echo " sudo echo \"\$(command -v zsh)\" >> /etc/shells"
+          echo "chsh -s \"\$(command -v zsh)\""
+          sleep 3
+        fi
+      else
+        fancy_echo "Shell will not be changed."
+      fi
+    else
+      fancy_echo "CI System detected, will not change shells."
+    fi
+    ;;
+esac
+
+brew_is_installed() {
+  brew list -1 | grep -Fqx "$1"
+
+}
+
+tap_is_installed() {
+  brew tap -1 | grep -Fqx "$1"
+}
+
+
+laptop_script_url="https://raw.githubusercontent.com/ddl-retornam/laptop/master/laptop"
+case "$SHELL" in
+  */fish) :
+    echo "We currently do not support the fish shell."
+    exit 1
+    ;;
+  *) :
+    append_to_shell_file "alias laptop='bash <(curl -s $laptop_script_url)'"
+    append_to_shell_file "export HOMEBREW_NO_ANALYTICS=1"
+    append_to_shell_file 'export PATH="$HOME/.bin:$PATH"'
+    ;;
+esac
+
+if ! command -v brew > /dev/null; then
+  fancy_echo "Installing Homebrew....."
+  /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+  append_to_shell_file 'export PATH="/usr/local/sbin:/usr/local/bin:$PATH"'
+else
+  fancy_echo "Homebrew already installed Skipping step ....."
+fi
+
+
+if brew_is_installed 'brew-cask' ; then 
+  brew uninstall --force 'brew-cask'
+fi
+
+
+if tap_installed 'caskroom/versions'; then
+  brew untap caskroom/versions
+fi
+
+fancy_echo "Updating Homebrew...."
+brew update
+
+fancy_echo "Verifying the Homebrew installation...."
+if brew doctor; then
+  fancy_echo "Your Homebrew installation is ready to go."
+else
+  fancy_echo "Your Homebrew installation reported some warnings or errors."
+  echo "If the warnings are Python related, you can ignore them."
+  echo "Otherwise, review the Homebrew messages to see if any action is required."
+fi
+
+
+fancy_echo "Installing formulas and casks from the Brewfile ...."
+if brew bundle --file="$HOME/.ddllaptop/Brewfile"; then
+  fancy_echo "All formulas ands casks were installed succesfully."
+else
+  echo "This is usually due to one of the mac apps being already installed."
+  echo "in which case, you can ignore these errors."
+fi
+
+
+append_to_shell_file 'eval "$(hub alias -s)"'
+
+
+if [ -f "$HOME/.ddllaptop/.laptop.local" ]; then
+  . "$HOME/.ddllaptop/.laptop.local"
+fi
+
+fancy_echo "All done!"
+
+
