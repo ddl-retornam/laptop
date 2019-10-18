@@ -7,6 +7,7 @@ cask_args appdir: '/Applications'
 
 brew 'ack'                         # better grep tool for programmers
 brew 'awscli'                      # awscli tool
+brew 'awsokta'                     # aws-okta assume role tool
 brew 'derailed/k9s/k9s'            # k9s control tool
 brew 'kubectx'                     # Kubernetes Context tool
 brew  'ipcalc'.                    # IP Range Calculator
