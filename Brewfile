@@ -9,6 +9,7 @@ brew 'ack'                         # better grep tool for programmers
 brew 'awscli'                      # awscli tool
 brew 'derailed/k9s/k9s'            # k9s control tool
 brew 'kubectx'                     # Kubernetes Context tool
+brew  'ipcalc'.                    # IP Range Calculator
 brew 'jq'                          # command line json parser
 brew 'tfenv'                       # terraform environment manager.
 
